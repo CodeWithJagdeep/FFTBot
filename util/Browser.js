@@ -3,12 +3,13 @@ const path = require("path");
 
 const launchBrowser = async (isHeadless) => {
   try {
-    // const extensionPath = path.resolve(__dirname, "../extension/ezyZip");
+    const extensionPath = path.resolve(__dirname, "../extension/ezyZip");
 
     console.log("Extension path:", extensionPath);
     const browser = await puppeteer.launch({
       headless: isHeadless,
-     
+      executablePath:
+        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", // Ensure this is correct
       args: [
         "--disable-blink-features=AutomationControlled", // Avoid detection
         "--disable-extensions-file-access-check", // Bypass file access check
