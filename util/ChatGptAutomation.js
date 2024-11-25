@@ -34,7 +34,7 @@ class ChatGPTAutomation {
       message.toLowerCase().includes("who owned you") ||
       message.toLowerCase().includes("who made you")
     ) {
-      return "Hello! I’m Veronica, your AI companion. I’ve been created by Aadarsh to randomly join rooms, greet you, and hang out for a while. If you need anything, just let me know!";
+      return `Hello! I’m ${process.env.owner}, your AI companion. I’ve been created by Aadarsh to randomly join rooms, greet you, and hang out for a while. If you need anything, just let me know!`;
     }
     return null;
   }
