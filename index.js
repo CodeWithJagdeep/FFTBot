@@ -2,14 +2,12 @@ const dotenv = require("dotenv");
 const { launchBrowser } = require("./util/Browser");
 const GoogleAuth = require("./util/GoogleAuth");
 const Observer = require("./util/Observer");
-
-// const { navigateToPage } = require("./util/pageNavigation");
-// const { observePageChanges } = require("./util/messageHandler");
 dotenv.config({ path: ".env" });
 
 class ChatAutomation {
   constructor() {
     this.browser = null;
+
     this.page = null;
     this.userAgent =
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36";
@@ -24,7 +22,14 @@ class ChatAutomation {
     try {
       this.browser = await launchBrowser(headless);
       this.page = await this.browser.newPage();
+
       await this.page.setUserAgent(this.userAgent);
+      await this.page.setViewport({ width: 1280, height: 500 });
+      await this.page.setBypassCSP(true);
+      // You can also use screen resolution dynamically using `window.innerWidth` & `window.innerHeight`:
+      await this.page.evaluate(() => {
+        window.resizeTo(1920, 1080); // Resize the window to full size
+      });
       console.log("Browser initialized successfully.");
     } catch (error) {
       console.error("Failed to initialize browser:", error);
@@ -52,7 +57,7 @@ class ChatAutomation {
 
   async observe() {
     try {
-      await new Observer(this.page).ObservePageChange();
+      await new Observer(this.page, this.browser).ObservePageChange();
       console.log("Started observing page changes.");
     } catch (error) {
       console.error("Failed to observe page changes:", error);
@@ -82,7 +87,7 @@ class ChatAutomation {
       await this.initializeBrowser(false);
       await this.login();
       await this.navigate();
-      await this.observe(this.browser);
+      await this.observe();
     } catch (error) {
       console.error("An error occurred during automation:", error);
     } finally {

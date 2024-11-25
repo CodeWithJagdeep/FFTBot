@@ -11,7 +11,11 @@
   "license": "ISC",
   "dependencies": {
     "dotenv": "^16.4.5",
-    "puppeteer": "^23.8.0",
+    "fingerprint-generator": "^2.1.57",
+    "puppeteer": "^23.9.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "wrtc": "^0.4.7",
     "ws": "^8.18.0"
   }
 }

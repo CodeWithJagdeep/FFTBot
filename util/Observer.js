@@ -1,9 +1,12 @@
 const Logger = require("./logger");
+const wrtc = require("wrtc");
+const WebSocket = require("ws");
 const {
   WelcomeMessages,
   funnyLeavingMessages,
   roastedKickMessages,
   fallbackMessage,
+  SpendingTime,
 } = require("../data/Message");
 const ActivityHook = require("../Hooks/Activityhooks");
 const ChatGPTAutomation = require("./ChatGptAutomation");
@@ -25,6 +28,8 @@ class Observer {
     this.previousKickedNodes = new Set();
     this.previousQuestionNodes = [];
     this.songPlayed = new Set();
+    this.JoinedUserTimes = [];
+    this.isIntroduce = [];
 
     // Flags
     this.isBusy = false;
@@ -34,8 +39,23 @@ class Observer {
     this.funnyLeavingMessages = funnyLeavingMessages;
     this.roastedKickMessages = roastedKickMessages;
     this.fallbackMessage = fallbackMessage;
+    this.TimeSpend = SpendingTime;
   }
 
+  async selfIntroduce() {
+    await this.page.waitForSelector("textarea");
+    const newMessages = this.isIntroduce.filter(
+      (node) => node.roomId == this.roomId
+    )[0];
+    if (!newMessages) {
+      await this.messageSender(
+        "Hello! I’m Veronica, your AI companion. I’ve been created by Aadarsh to randomly join rooms, greet you, and hang out for a while. If you need anything, just let me know!"
+      );
+      this.isIntroduce.push({
+        roomId: this.roomId,
+      });
+    }
+  }
   /**
    * Sends a message via the page's textarea
    * @param {string} message - The message to send
@@ -64,6 +84,11 @@ class Observer {
           const message = messages[Math.floor(Math.random() * messages.length)];
           await this.messageSender(message);
           this.previousJoinNodes.push(username); // Track processed users
+          let currentTime = Date.now();
+          this.JoinedUserTimes.push({
+            username: username,
+            joinedTime: currentTime,
+          });
         }
       }
     } catch (err) {
@@ -83,11 +108,46 @@ class Observer {
           !this.kickedUserName.includes(username)
         ) {
           console.log(`User Left: ${username}`);
-          const messages = this.funnyLeavingMessages(username);
-          const message = messages[Math.floor(Math.random() * messages.length)];
-          await this.messageSender(message);
+          // const messages = this.funnyLeavingMessages(username);
+          // const message = messages[Math.floor(Math.random() * messages.length)];
+          // await this.messageSender(message);
+          let leavedUser = this.JoinedUserTimes.filter(
+            (node) => node.username == username
+          )[0];
+          if (leavedUser) {
+            let currentTime = Date.now(); // Corrected to Date.now() instead of new Date.now()
+            let timeDifference = currentTime - leavedUser.joinedTime;
+
+            // Convert the time difference to minutes and hours
+            let differenceInMinutes = Math.floor(timeDifference / (60 * 1000)); // Total minutes
+            let differenceInHours = Math.floor(differenceInMinutes / 60); // Extract hours from total minutes
+            let remainingMinutes = differenceInMinutes % 60; // Remaining minutes after hours
+
+            if (differenceInHours > 0) {
+              let spendingTime = `${differenceInHours} hour(s) and ${remainingMinutes} minute(s)`;
+              const messages = this.TimeSpend(username, spendingTime);
+              const message =
+                messages[Math.floor(Math.random() * messages.length)];
+              await this.messageSender(message);
+              return this.previousLeaveNodes.add(node);
+            } else if (differenceInMinutes > 0) {
+              let spendingTime = `${remainingMinutes} minute(s)`;
+              const messages = this.TimeSpend(username, spendingTime);
+              const message =
+                messages[Math.floor(Math.random() * messages.length)];
+              await this.messageSender(message);
+              return this.previousLeaveNodes.add(node);
+            } else {
+              const messages = this.funnyLeavingMessages(username);
+              const message =
+                messages[Math.floor(Math.random() * messages.length)];
+              await this.messageSender(message);
+              return this.previousLeaveNodes.add(node);
+            }
+          }
         }
-        this.previousLeaveNodes.add(node); // Track processed leave events
+        // Track processed leave events
+        this.previousLeaveNodes.add(node);
       }
     } catch (err) {
       console.error("Error processing leave messages:", err);
@@ -113,7 +173,10 @@ class Observer {
         });
         const sanitizedNode = node.message.replace(/@Veronica/g, "").trim();
         try {
-          const ans = await new ChatGPTAutomation(this.page, this.browser).getAnswers(sanitizedNode);
+          const ans = await new ChatGPTAutomation(
+            this.page,
+            this.browser
+          ).getAnswers(sanitizedNode);
           const response = ans
             ? `\`\`@${node.user}\`\` ${ans}`
             : `\`\`@${node.user}\`\` I couldn't understand your query.`;
@@ -160,7 +223,7 @@ class Observer {
           this.callingMe,
           this.roomId,
         ] = await ActivityHook(this.page);
-
+        await this.selfIntroduce();
         await this.AiResponse();
         await this.joinedUser();
         await this.leavedUserMessage();

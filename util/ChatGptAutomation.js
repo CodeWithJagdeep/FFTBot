@@ -1,5 +1,9 @@
-const { launchBrowser } = require("./Browser");
+const { default: puppeteer } = require("puppeteer");
 const Delay = require("../Hooks/Delay");
+const GoogleAuth = require("../util/GoogleAuth");
+const dotenv = require("dotenv");
+
+dotenv.config({ path: ".env" });
 
 /**
  * ChatGPT Automation Class
@@ -8,10 +12,13 @@ const Delay = require("../Hooks/Delay");
  * @returns {Promise<string[]>} - The responses from ChatGPT
  */
 class ChatGPTAutomation {
-  constructor() {
+  constructor(page, browser) {
     this.userAgent =
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36";
     this.url = "https://chat.openai.com"; // Updated ChatGPT URL
+    this.geminiUrl = "https://gemini.google.com/";
+    this.browser = browser;
+    this.page = page;
   }
 
   /**
@@ -32,6 +39,23 @@ class ChatGPTAutomation {
     return null;
   }
 
+  async launchBrowser() {
+    try {
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          "--disable-blink-features=AutomationControlled", // Avoid detection
+          "--disable-extensions-file-access-check", // Bypass file access check
+        ],
+      });
+      console.log("Browser launched successfully!");
+      return browser;
+    } catch (error) {
+      console.error("Error launching browser:", error.message);
+      throw error;
+    }
+  }
+
   async ChatGptAuth() {
     await page.waitForSelector('[data-testid="login-button"]', {
       visible: true,
@@ -39,74 +63,126 @@ class ChatGPTAutomation {
     await page.click('[data-testid="login-button"]');
   }
 
-  async ProcessWithGemini() {
-    this.browser = await launchBrowser(false);
-    //   page = await browser.newPage();
+  async ProcessWithGemini(message) {
+    console.log("Starting ProcessWithGemini...");
     const newTab = await this.browser.newPage(); // Open a new tab
-    await newTab.bringToFront(); // Focus on the new tab
-    console.log("New tab is open.");
+    await newTab.bringToFront(); // Bring the new tab to the foreground
+    console.log("New tab opened and focused.");
 
-    await new GoogleAuth().Login(newTab);
     try {
-      // Navigate to the target URL
+      // Step 1: Authenticate user via Google
+
+      // Step 2: Navigate to the target URL and configure user agent
+      console.log("Navigating to Gemini URL...");
       await newTab.goto(this.geminiUrl, { waitUntil: "domcontentloaded" });
+      console.log("Setting custom user agent...");
       await newTab.setUserAgent(this.userAgent);
-      // Selector for the target div
 
-      // Wait for the target div to load
-      //   await newTab.waitForSelector(selector);
+      // Step 3: Enter the message into the input field
+      console.log("Typing the message...");
+      await newTab.keyboard.type(message, { delay: 10 });
 
-      await newTab.keyboard.type(message, { delay: 10 }); // Add slight delay for more natural typing
-      console.log("Text has been added to the div.");
-
-      // Wait briefly for stability
+      // Wait for UI stabilization
+      console.log("Waiting for stability...");
       await Delay(5000);
-      // Press Enter
+
+      // Step 4: Submit the message by pressing Enter
+      console.log("Submitting the message...");
       await newTab.keyboard.press("Enter");
-      console.log("Enter key pressed.");
-      await Delay(15000);
-      // Selector for the target element
-      const selector = ".model-response-text.ng-star-inserted";
 
-      // Wait for the element to load
-      await page.waitForSelector(selector);
+      // Step 5: Wait for the response to appear
+      const responseSelector = ".model-response-text.ng-star-inserted";
+      console.log("Waiting for the response element...");
+      await newTab.waitForSelector(responseSelector, { timeout: 15000 });
 
-      // Extract the text from the target element
+      // Step 6: Extract the response text
+      console.log("Extracting response text...");
       const extractedText = await newTab.evaluate((selector) => {
         const element = document.querySelector(selector);
-        return element ? element.innerText.trim() : null; // Return text or null if the element is not found
-      }, selector);
+        return element ? element.innerText.trim() : null; // Return text or null
+      }, responseSelector);
 
       if (extractedText) {
         console.log("Extracted Text:", extractedText);
+        return extractedText;
       } else {
-        console.log("Element not found or no text available.");
+        console.log("No response text found.");
       }
-
-      //   // Define the selector for the send button
-      //   const buttonSelector =
-      //     ".send-button.mdc-icon-button.mat-mdc-icon-button.mat-primary";
-
-      //   // Wait for the send button to appear
-      //   await newTab.waitForSelector(buttonSelector);
-
-      //   // Click the send button
-      //   await newTab.click(buttonSelector);
-      console.log("Button clicked and message sent.");
     } catch (error) {
-      console.error("Error during processing:", error);
+      console.error("An error occurred in ProcessWithGemini:", error);
     } finally {
-      // Close the new tab and return focus to the original tab
-      //   await newTab.close();
+      // Ensure the new tab is closed
+      console.log("Closing the new tab...");
+      await newTab.close();
       console.log("New tab closed, returning to the original tab.");
     }
   }
+
   /**
    * Process the message and fetch responses from ChatGPT
    * @param {string} message - The input message
    * @returns {Promise<string[]>} - The responses from ChatGPT
    */
-  async processMessage(message) {}
+  async processMessage(message) {
+    let browser, page;
+
+    try {
+      // Check for predefined responses
+      const predefinedResponse = this.handleConditions(message);
+      if (predefinedResponse) {
+        return [predefinedResponse]; // Ensure consistent return type
+      }
+
+      // Launch browser
+      browser = await this.launchBrowser();
+      page = await browser.newPage();
+      // Set user agent and navigate to ChatGPT URL
+      await page.setUserAgent(this.userAgent);
+      await page.goto(this.url, { waitUntil: "domcontentloaded" });
+      await Delay(2000);
+      console.log(`Processing message: ${message}`);
+      //   this.ChatGptAuth();
+      //   Type message into the text area
+      await page.waitForSelector("textarea");
+      await page.type(
+        "textarea",
+        `${message} make only reply in flrtish way dont give any suggestion`
+      );
+      await page.waitForSelector('[data-testid="send-button"]', {
+        visible: true,
+      });
+      await page.click('[data-testid="send-button"]');
+      await Delay(2000); // Wait for the response to load
+      console.log("Reply sent.");
+      // Click send button
+      await page.waitForSelector('[data-testid="send-button"]', {
+        visible: true,
+      });
+      await page.click('[data-testid="send-button"]');
+      // Wait for assistant response
+      console.log("Reply sent. Extracting response...");
+      await page.waitForSelector('[data-message-author-role="assistant"]', {
+        visible: true,
+      });
+      await Delay(8000); // Wait for the response to load
+      // Extract response text
+      const responses = await page.evaluate(() => {
+        const elements = document.querySelectorAll(
+          '[data-message-author-role="assistant"]'
+        );
+        return Array.from(elements).map((el) => el.innerText.trim());
+      });
+      console.log("Responses retrieved:", responses);
+      return responses;
+    } catch (error) {
+      console.error("Error while processing message:", error);
+      throw new Error("Failed to retrieve responses.");
+    } finally {
+      // Ensure proper cleanup
+      if (page) await page.close().catch(console.error);
+      if (browser) await browser.close().catch(console.error);
+    }
+  }
 
   /**
    * Get responses to a message

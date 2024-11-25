@@ -1,3 +1,5 @@
+const Delay = require("../Hooks/Delay");
+
 class GoogleAuth {
   constructor() {
     // Default values for development; replace with actual credentials in production
@@ -39,6 +41,7 @@ class GoogleAuth {
 
       // Optional: Dynamic wait instead of static delay
       await page.waitForSelector("body", { visible: true });
+      await Delay(0.5 * 60 * 1000);
       console.log("Post-login actions completed.");
     } catch (error) {
       console.error("Error during Google login:", error.message);
