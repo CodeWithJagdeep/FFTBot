@@ -89,7 +89,7 @@ class ChatAutomation {
       await this.navigate();
       await this.observe();
     } catch (error) {
-      console.error("An error occurred during automation:", error);
+      console.error("An error occurred during automation:");
     } finally {
       if (this.browser) {
         // await this.browser.close();

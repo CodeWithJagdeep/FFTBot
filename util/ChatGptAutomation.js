@@ -51,7 +51,7 @@ class ChatGPTAutomation {
       console.log("Browser launched successfully!");
       return browser;
     } catch (error) {
-      console.error("Error launching browser:", error.message);
+      console.error("Error launching browser:");
       throw error;
     }
   }
@@ -109,7 +109,7 @@ class ChatGPTAutomation {
         console.log("No response text found.");
       }
     } catch (error) {
-      console.error("An error occurred in ProcessWithGemini:", error);
+      console.error("An error occurred in ProcessWithGemini:");
     } finally {
       // Ensure the new tab is closed
       console.log("Closing the new tab...");
@@ -146,7 +146,7 @@ class ChatGPTAutomation {
       await page.waitForSelector("textarea");
       await page.type(
         "textarea",
-        `${message} make only reply in flrtish way dont give any suggestion`
+        `${message} make only reply dont give any suggestion`
       );
       await page.waitForSelector('[data-testid="send-button"]', {
         visible: true,
@@ -175,7 +175,7 @@ class ChatGPTAutomation {
       console.log("Responses retrieved:", responses);
       return responses;
     } catch (error) {
-      console.error("Error while processing message:", error);
+      console.error("Error while processing message whill retreving answer");
       throw new Error("Failed to retrieve responses.");
     } finally {
       // Ensure proper cleanup
@@ -193,150 +193,10 @@ class ChatGPTAutomation {
     try {
       return await this.processMessage(message);
     } catch (error) {
-      console.error("Failed to retrieve answers:", error);
+      console.error("Failed to retrieve answers");
       throw error;
     }
   }
 }
 
 module.exports = ChatGPTAutomation;
-
-// let browser, page;
-
-// try {
-//   // Check for predefined responses
-//   const predefinedResponse = this.handleConditions(message);
-//   if (predefinedResponse) {
-//     return [predefinedResponse]; // Ensure consistent return type
-//   }
-
-//   // Launch browser
-//   browser = await launchBrowser(false);
-//   page = await browser.newPage();
-
-//   // Set user agent and navigate to ChatGPT URL
-//   await page.setUserAgent(this.userAgent);
-//   await page.goto(this.url, { waitUntil: "domcontentloaded" });
-//   await Delay(5000);
-//   console.log(`Processing message: ${message}`);
-//   //   this.ChatGptAuth();
-//   //   Type message into the text area
-//   await page.waitForSelector("textarea");
-//   await page.type(
-//     "textarea",
-//     `${message} make only reply dont give any suggestion`
-//   );
-//   await page.waitForSelector('[data-testid="send-button"]', {
-//     visible: true,
-//   });
-//   await page.click('[data-testid="send-button"]');
-//   await Delay(5000); // Wait for the response to load
-//   console.log("Reply sent.");
-
-//   // Click send button
-//   await page.waitForSelector('[data-testid="send-button"]', {
-//     visible: true,
-//   });
-//   await page.click('[data-testid="send-button"]');
-
-//   // Wait for assistant response
-//   console.log("Reply sent. Extracting response...");
-//   await page.waitForSelector('[data-message-author-role="assistant"]', {
-//     visible: true,
-//   });
-
-//   // Extract response text
-//   const responses = await page.evaluate(() => {
-//     const elements = document.querySelectorAll(
-//       '[data-message-author-role="assistant"]'
-//     );
-//     return Array.from(elements).map((el) => el.innerText.trim());
-//   });
-
-//   console.log("Responses retrieved:", responses);
-//   return responses;
-// } catch (error) {
-//   console.error("Error while processing message:", error);
-//   throw new Error("Failed to retrieve responses.");
-// } finally {
-//   // Ensure proper cleanup
-//   if (page) await page.close().catch(console.error);
-//   if (browser) await browser.close().catch(console.error);
-// }
-
-// new ChatGPTAutomation().getAnswers("how r u?");
-// const puppeteer = require("puppeteer");
-// const Delay = require("../Hooks/Delay");
-
-// const launchBrowser = async () => {
-//   try {
-//     const browser = await puppeteer.launch({
-//       headless: false, // set to true for headless mode (improves performance)
-//       args: [
-//         "--no-sandbox",
-//         "--disable-setuid-sandbox",
-//         "--disable-blink-features=AutomationControlled",
-//       ],
-//     });
-//     return browser;
-//   } catch (error) {
-//     console.error("Error launching browser:", error);
-//     throw error;
-//   }
-// };
-
-// // Delay function using setTimeout with Promise
-// const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-// const ChatGptAutomation = async (message) => {
-//   return new Promise(async (resolve, reject) => {
-//     const browser = await launchBrowser();
-//     try {
-//       const page = await browser.newPage();
-//       await page.setUserAgent(
-//         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
-//       );
-
-//       await page.goto("https://chatgpt.com", {
-//         waitUntil: "domcontentloaded",
-//       });
-
-//       console.log(`Processing message: ${message}`);
-//       // Conditions for specific questions
-//       if (
-//         message.toLowerCase().includes("who is your owner") ||
-//         message.toLowerCase().includes("who's your owner") ||
-//         message.toLowerCase().includes("who created you") ||
-//         message.toLowerCase().includes("who owned you") ||
-//         message.toLowerCase().includes("who made you")
-//       ) {
-//         return "Hello! I’m Veronica, your AI companion. I’ve been created by Aadarsh to randomly join rooms, greet you, and hang out for a while. If you need anything, just let me know!";
-//       }
-//       await page.type(
-//         "textarea",
-//         `${message} make only reply dont give any suggestion`
-//       );
-//       await delay(2000);
-//       await page.waitForSelector('[data-testid="send-button"]', {
-//         visible: true,
-//       });
-//       await page.click('[data-testid="send-button"]');
-//       await delay(5000); // Wait for the response to load
-//       console.log("Reply sent.");
-//       const texts = await page.evaluate(() => {
-//         const elements = document.querySelectorAll(
-//           '[data-message-author-role="assistant"]'
-//         );
-//         return Array.from(elements).map((el) => el.innerText.trim());
-//       });
-
-//       resolve(texts);
-//     } catch (error) {
-//       reject(error);
-//     } finally {
-//       await browser.close();
-//     }
-//   });
-// };
-
-// module.exports = ChatGptAutomation;

@@ -65,7 +65,8 @@ class Observer {
       await this.page.type("textarea", message);
       await this.page.keyboard.press("Enter");
     } catch (err) {
-      console.error("Error sending message:", err);
+      // console.error("Error sending message:", err);
+      console.log("got error");
     }
   }
 
@@ -92,7 +93,7 @@ class Observer {
         }
       }
     } catch (err) {
-      console.error("Error processing joined users:", err);
+      console.error("Error processing joined users:");
     }
   }
 
@@ -150,7 +151,7 @@ class Observer {
         this.previousLeaveNodes.add(node);
       }
     } catch (err) {
-      console.error("Error processing leave messages:", err);
+      console.error("Error processing leave messages");
     }
   }
 
@@ -171,7 +172,9 @@ class Observer {
           message: node.message,
           roomId: this.roomId,
         });
-        const sanitizedNode = node.message.replace(/@Veronica/g, "").trim();
+        const sanitizedNode = node.message
+          .replace(`/@${process.env.owner}/g`, "")
+          .trim();
         try {
           const ans = await new ChatGPTAutomation(
             this.page,
@@ -182,7 +185,7 @@ class Observer {
             : `\`\`@${node.user}\`\` I couldn't understand your query.`;
           await this.messageSender(response);
         } catch (error) {
-          console.error("Error generating AI response:", error);
+          console.error("Error generating AI response:");
           const fallback = this.fallbackMessage(node.user);
           const fallbackMessage =
             fallback[Math.floor(Math.random() * fallback.length)];
@@ -190,7 +193,7 @@ class Observer {
         }
       }
     } catch (err) {
-      console.error("Error processing AI responses:", err);
+      console.error("Error processing AI responses:");
     }
   }
 
@@ -207,7 +210,7 @@ class Observer {
         console.log(`User Kicked: ${this.kickedNode}`);
       }
     } catch (err) {
-      console.error("Error processing kicked users:", err);
+      console.error("Error processing kicked users:");
     }
   }
 
@@ -229,7 +232,7 @@ class Observer {
         await this.leavedUserMessage();
         await this.kickedUser();
       } catch (error) {
-        console.error("Error observing page changes:", error);
+        console.error("Error observing page changes:");
       } finally {
         this.isBusy = false; // Mark bot as free after processing
       }

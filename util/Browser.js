@@ -20,7 +20,7 @@ const launchBrowser = async (isHeadless) => {
     console.log("Browser launched successfully!");
     return browser;
   } catch (error) {
-    console.error("Error launching browser:", error.message);
+    console.error("Error launching browser:");
     throw error;
   }
 };

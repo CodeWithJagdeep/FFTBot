@@ -44,23 +44,10 @@ class GoogleAuth {
       await Delay(0.5 * 60 * 1000);
       console.log("Post-login actions completed.");
     } catch (error) {
-      console.error("Error during Google login:", error.message);
+      console.error("Error during Google login:");
       throw error;
     }
   }
 }
 
 module.exports = GoogleAuth;
-
-// await page.goto("https://accounts.google.com/signin");
-// await page.waitForSelector('input[type="email"]');
-// await page.type('input[type="email"]', process.env.email);
-// await page.click("#identifierNext");
-// await page.waitForSelector('input[type="password"]', { visible: true });
-// await page.type('input[type="password"]', process.env.password);
-// await page.click("#passwordNext");
-
-// await page.waitForNavigation();
-
-// console.log("Login successful.");
-// await Delay(10000);
