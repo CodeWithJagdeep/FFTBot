@@ -49,7 +49,7 @@ class Observer {
     )[0];
     if (!newMessages) {
       await this.messageSender(
-        "Hello! I’m Veronica, your AI companion. I’ve been created by Aadarsh to randomly join rooms, greet you, and hang out for a while. If you need anything, just let me know!"
+        `Hello! I’m ${process.env.owner}, your AI companion. I’ve been created by Aadarsh to randomly join rooms, greet you, and hang out for a while. If you need anything, just let me know!`
       );
       this.isIntroduce.push({
         roomId: this.roomId,
