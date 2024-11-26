@@ -25,7 +25,7 @@ async function ActivityHook(page) {
         const filteredData = Array.from(elements)
           .filter((el) => {
             const mention = el.querySelector("code"); // Find the <code> element containing the mention
-            return mention && mention.innerText.includes("@Veronica"); // Check if the mention contains "@Veronica"
+            return mention && mention.innerText.includes(process.env.owner); // Check if the mention contains "@Veronica"
           }) // Check if the <div> contains a <code> tag
           .map((el) => {
             const userName = el.querySelector(".name.primary span"); // Extract the user's name
