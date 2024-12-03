@@ -30,6 +30,8 @@ class Observer {
     this.songPlayed = new Set();
     this.JoinedUserTimes = [];
     this.isIntroduce = [];
+    this.currentPromotedNode = [];
+    this.prevPromotedNode = [];
 
     // Flags
     this.isBusy = false;
@@ -173,7 +175,7 @@ class Observer {
           roomId: this.roomId,
         });
         const sanitizedNode = node.message
-          .replace(`/@${process.env.owner}/g`, "")
+          .replace(/@Psycho/gi, "") // Replace @Veronica (case-insensitive)
           .trim();
         try {
           const ans = await new ChatGPTAutomation(
@@ -214,6 +216,22 @@ class Observer {
     }
   }
 
+  async PromotedNode() {
+    if (this.currentPromotedNode) {
+      if (!this.prevPromotedNode.includes(this.currentPromotedNode)) {
+        const ans = await new ChatGPTAutomation(
+          this.page,
+          this.browser
+        ).getAnswers(this.currentPromotedNode);
+        const response = ans
+          ? `\`\`@${node.user}\`\` ${ans}`
+          : `\`\`@${node.user}\`\` Tu kahi jake dub maar 😂😂 bhosdike.`;
+        await this.messageSender(response);
+        this.prevPromotedNode(this.currentPromotedNode);
+      }
+    }
+  }
+
   async ObservePageChange() {
     setInterval(async () => {
       if (this.isBusy) return; // Skip iteration if bot is busy
@@ -225,12 +243,13 @@ class Observer {
           this.kickedNode,
           this.callingMe,
           this.roomId,
+          this.currentPromotedNode,
         ] = await ActivityHook(this.page);
-        await this.selfIntroduce();
         await this.AiResponse();
         await this.joinedUser();
         await this.leavedUserMessage();
         await this.kickedUser();
+        await this.PromotedNode();
       } catch (error) {
         console.error("Error observing page changes:");
       } finally {

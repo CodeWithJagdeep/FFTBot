@@ -56,65 +56,49 @@ class ChatGPTAutomation {
     }
   }
 
-  async ChatGptAuth() {
-    await page.waitForSelector('[data-testid="login-button"]', {
-      visible: true,
-    });
-    await page.click('[data-testid="login-button"]');
-  }
-
   async ProcessWithGemini(message) {
-    console.log("Starting ProcessWithGemini...");
-    const newTab = await this.browser.newPage(); // Open a new tab
-    await newTab.bringToFront(); // Bring the new tab to the foreground
-    console.log("New tab opened and focused.");
-
+    const pages = await browser.pages(); // Get all open tabs (pages)
     try {
-      // Step 1: Authenticate user via Google
-
-      // Step 2: Navigate to the target URL and configure user agent
-      console.log("Navigating to Gemini URL...");
-      await newTab.goto(this.geminiUrl, { waitUntil: "domcontentloaded" });
-      console.log("Setting custom user agent...");
-      await newTab.setUserAgent(this.userAgent);
-
-      // Step 3: Enter the message into the input field
+      // Locate the Gemini tab
+      let geminiTab = pages.find((page) =>
+        page.url().includes("gemini.google.com")
+      );
+      await geminiTab.bringToFront();
       console.log("Typing the message...");
-      await newTab.keyboard.type(message, { delay: 10 });
-
+      Delay(1500);
+      await geminiTab.keyboard.type(
+        `${message} make only reply dont give any suggestion`,
+        { delay: 10 }
+      );
       // Wait for UI stabilization
       console.log("Waiting for stability...");
-      await Delay(5000);
-
-      // Step 4: Submit the message by pressing Enter
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      // Submit the message by pressing Enter
       console.log("Submitting the message...");
-      await newTab.keyboard.press("Enter");
+      await geminiTab.keyboard.press("Enter");
 
-      // Step 5: Wait for the response to appear
+      // Wait for the response to appear
       const responseSelector = ".model-response-text.ng-star-inserted";
       console.log("Waiting for the response element...");
-      await newTab.waitForSelector(responseSelector, { timeout: 15000 });
+      await geminiTab.waitForSelector(responseSelector, { timeout: 15000 });
 
-      // Step 6: Extract the response text
+      // Extract the response text
       console.log("Extracting response text...");
-      const extractedText = await newTab.evaluate((selector) => {
+      const extractedText = await geminiTab.evaluate((selector) => {
         const element = document.querySelector(selector);
-        return element ? element.innerText.trim() : null; // Return text or null
+        return element ? element.innerText.trim() : null;
       }, responseSelector);
 
       if (extractedText) {
         console.log("Extracted Text:", extractedText);
-        return extractedText;
       } else {
         console.log("No response text found.");
       }
     } catch (error) {
-      console.error("An error occurred in ProcessWithGemini:");
+      console.error("Error checking tabs:", error);
     } finally {
-      // Ensure the new tab is closed
-      console.log("Closing the new tab...");
-      await newTab.close();
-      console.log("New tab closed, returning to the original tab.");
+      let fftTab = pages.find((page) => page.url().includes("free4talk.com")); // Get all open tabs (pages)
+      await fftTab.bringToFront();
     }
   }
 
@@ -124,64 +108,110 @@ class ChatGPTAutomation {
    * @returns {Promise<string[]>} - The responses from ChatGPT
    */
   async processMessage(message) {
-    let browser, page;
-
+    const pages = await this.browser.pages(); // Get all open tabs (pages)
     try {
-      // Check for predefined responses
-      const predefinedResponse = this.handleConditions(message);
-      if (predefinedResponse) {
-        return [predefinedResponse]; // Ensure consistent return type
-      }
-
-      // Launch browser
-      browser = await this.launchBrowser();
-      page = await browser.newPage();
-      // Set user agent and navigate to ChatGPT URL
-      await page.setUserAgent(this.userAgent);
-      await page.goto(this.url, { waitUntil: "domcontentloaded" });
+      // Locate the Gemini tab
+      let newTab = pages.find((page) => page.url().includes("chatgpt.com"));
+      await newTab.bringToFront();
       await Delay(2000);
       console.log(`Processing message: ${message}`);
       //   this.ChatGptAuth();
       //   Type message into the text area
-      await page.waitForSelector("textarea");
-      await page.type(
+      await newTab.waitForSelector("textarea");
+      await newTab.type(
         "textarea",
-        `${message} make only reply dont give any suggestion`
+        `${message} make super roasted way reply in hindi but use english letters only reply dont give any suggestion also use emoji to show little human feeling`
       );
-      await page.waitForSelector('[data-testid="send-button"]', {
+      await newTab.waitForSelector('[data-testid="send-button"]', {
         visible: true,
       });
-      await page.click('[data-testid="send-button"]');
+      await newTab.click('[data-testid="send-button"]');
       await Delay(2000); // Wait for the response to load
       console.log("Reply sent.");
       // Click send button
-      await page.waitForSelector('[data-testid="send-button"]', {
+      await newTab.waitForSelector('[data-testid="send-button"]', {
         visible: true,
       });
-      await page.click('[data-testid="send-button"]');
+      await newTab.click('[data-testid="send-button"]');
       // Wait for assistant response
       console.log("Reply sent. Extracting response...");
-      await page.waitForSelector('[data-message-author-role="assistant"]', {
+      await newTab.waitForSelector('[data-message-author-role="assistant"]', {
         visible: true,
       });
-      await Delay(8000); // Wait for the response to load
+      await Delay(6000); // Wait for the response to load
       // Extract response text
-      const responses = await page.evaluate(() => {
+      const responses = await newTab.evaluate(() => {
         const elements = document.querySelectorAll(
           '[data-message-author-role="assistant"]'
         );
         return Array.from(elements).map((el) => el.innerText.trim());
       });
+      const latestReply = responses[responses.length - 1];
       console.log("Responses retrieved:", responses);
-      return responses;
+      return latestReply;
     } catch (error) {
-      console.error("Error while processing message whill retreving answer");
-      throw new Error("Failed to retrieve responses.");
+      console.error("Error checking tabs:", error);
     } finally {
-      // Ensure proper cleanup
-      if (page) await page.close().catch(console.error);
-      if (browser) await browser.close().catch(console.error);
+      await Delay(2000);
+      let fftTab = pages.find((page) => page.url().includes("free4talk.com")); // Get all open tabs (pages)
+      await fftTab.bringToFront();
     }
+    // let browser, page;
+    // try {
+    //   // Check for predefined responses
+    //   const predefinedResponse = this.handleConditions(message);
+    //   if (predefinedResponse) {
+    //     return [predefinedResponse]; // Ensure consistent return type
+    //   }
+    //   // Launch browser
+    //   browser = await this.launchBrowser();
+    //   page = await browser.newPage();
+    //   // Set user agent and navigate to ChatGPT URL
+    //   await page.setUserAgent(this.userAgent);
+    //   await page.goto(this.url, { waitUntil: "domcontentloaded" });
+    //   await Delay(2000);
+    //   console.log(`Processing message: ${message}`);
+    //   //   this.ChatGptAuth();
+    //   //   Type message into the text area
+    //   await page.waitForSelector("textarea");
+    //   await page.type(
+    //     "textarea",
+    //     `${message} make only reply dont give any suggestion`
+    //   );
+    //   await page.waitForSelector('[data-testid="send-button"]', {
+    //     visible: true,
+    //   });
+    //   await page.click('[data-testid="send-button"]');
+    //   await Delay(2000); // Wait for the response to load
+    //   console.log("Reply sent.");
+    //   // Click send button
+    //   await page.waitForSelector('[data-testid="send-button"]', {
+    //     visible: true,
+    //   });
+    //   await page.click('[data-testid="send-button"]');
+    //   // Wait for assistant response
+    //   console.log("Reply sent. Extracting response...");
+    //   await page.waitForSelector('[data-message-author-role="assistant"]', {
+    //     visible: true,
+    //   });
+    //   await Delay(8000); // Wait for the response to load
+    //   // Extract response text
+    //   const responses = await page.evaluate(() => {
+    //     const elements = document.querySelectorAll(
+    //       '[data-message-author-role="assistant"]'
+    //     );
+    //     return Array.from(elements).map((el) => el.innerText.trim());
+    //   });
+    //   console.log("Responses retrieved:", responses);
+    //   return responses;
+    // } catch (error) {
+    //   console.error("Error while processing message whill retreving answer");
+    //   throw new Error("Failed to retrieve responses.");
+    // } finally {
+    //   // Ensure proper cleanup
+    //   if (page) await page.close().catch(console.error);
+    //   if (browser) await browser.close().catch(console.error);
+    // }
   }
 
   /**
@@ -193,6 +223,7 @@ class ChatGPTAutomation {
     try {
       return await this.processMessage(message);
     } catch (error) {
+      console.log(error);
       console.error("Failed to retrieve answers");
       throw error;
     }
