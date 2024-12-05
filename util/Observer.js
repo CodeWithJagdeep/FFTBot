@@ -10,6 +10,8 @@ const {
 } = require("../data/Message");
 const ActivityHook = require("../Hooks/Activityhooks");
 const ChatGPTAutomation = require("./ChatGptAutomation");
+const dotenv = require("dotenv");
+dotenv.config({ path: "../.env" });
 
 class Observer {
   constructor(page, browser) {
@@ -34,6 +36,7 @@ class Observer {
     this.prevPromotedNode = [];
     this.userReplies = [];
     this.prevReply = [];
+    this.doWelcome = false;
     // Flags
     this.isBusy = false;
 
@@ -92,14 +95,14 @@ class Observer {
         });
         console.log(node);
         const sanitizedNode = node.message
-          .replace(/@Psycho/gi, "") // Replace @Veronica (case-insensitive)
+          .replace(new RegExp(`${process.env.owner}`, "gi"), "") // Replace @Veronica (case-insensitive)
           .trim();
         try {
           const ans = await new ChatGPTAutomation(
             this.page,
             this.browser
           ).getAnswers(
-            `${sanitizedNode} make reply like real human,  only reply dont give any suggestion also use emoji to show little human feeling use not more than 20 words, and dont use hey ${node.user}, use name in between sentence`
+            `${sanitizedNode} make reply like real human,  only reply dont give any suggestion also use emoji to show little human feeling use not more than 20 words, and dont use hey ${node.user}, use  ${node.user} in between sentence`
           );
           const sanitizedans = ans.replace(
             new RegExp(`${node.user}`, "gi"),
@@ -132,10 +135,12 @@ class Observer {
         if (!this.previousJoinNodes.includes(username)) {
           const logMessage = `User Joined: ${username}`;
           this.Logger.logToFile(logMessage);
-          console.log(logMessage);
-          const messages = this.welcomeMessages(username);
-          const message = messages[Math.floor(Math.random() * messages.length)];
-          await this.messageSender(message);
+          if (this.doWelcome) {
+            const messages = this.welcomeMessages(username);
+            const message =
+              messages[Math.floor(Math.random() * messages.length)];
+            await this.messageSender(message);
+          }
           this.previousJoinNodes.push(username); // Track processed users
           let currentTime = Date.now();
           this.JoinedUserTimes.push({
@@ -224,15 +229,21 @@ class Observer {
           message: node.message,
           roomId: this.roomId,
         });
+        if (node.message == "welcome users") {
+          return (this.doWelcome = true);
+        }
+        if (node.message == "dont welcome users") {
+          return (this.doWelcome = false);
+        }
         const sanitizedNode = node.message
-          .replace(/@Psycho/gi, "") // Replace @Veronica (case-insensitive)
+          .replace(new RegExp(`${process.env.owner}`, "gi"), "") // Replace @Veronica (case-insensitive)
           .trim();
         try {
           const ans = await new ChatGPTAutomation(
             this.page,
             this.browser
           ).getAnswers(
-            `${sanitizedNode} make reply like real human,  only reply dont give any suggestion also use emoji to show little human feeling use not more than 20 words, and dont use hey ${node.user}, use name in between sentence`
+            `${sanitizedNode} make reply like real human,  only reply dont give any suggestion also use emoji to show little human feeling use not more than 20 words, and dont use hey ${node.user}, use  ${node.user} in between sentence`
           );
 
           const sanitizedans = ans.replace(
@@ -305,10 +316,10 @@ class Observer {
         ] = await ActivityHook(this.page);
         await this.AiResponse();
         await this.makeReply();
-        // await this.joinedUser();
+        await this.joinedUser();
         // await this.leavedUserMessage();
         await this.kickedUser();
-        await this.PromotedNode();
+        // await this.PromotedNode();
       } catch (error) {
         console.log(error);
         console.error("Error observing page changes:");

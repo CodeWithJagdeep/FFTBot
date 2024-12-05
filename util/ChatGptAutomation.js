@@ -118,10 +118,7 @@ class ChatGPTAutomation {
       //   this.ChatGptAuth();
       //   Type message into the text area
       await newTab.waitForSelector("textarea");
-      await newTab.type(
-        "textarea",
-        `${message} `
-      );
+      await newTab.keyboard.type(`${message}`, { delay: 10 });
       await Delay(2000);
       await newTab.waitForSelector('[data-testid="send-button"]', {
         visible: true,

@@ -1,3 +1,6 @@
+const dotenv = require("dotenv");
+dotenv.config({ path: "../.env" });
+
 async function ActivityHook(page) {
   let [
     currentJoinNodes,
@@ -8,32 +11,35 @@ async function ActivityHook(page) {
     currentPromotedNode,
     userReplies,
   ] = await Promise.all([
-    page.evaluate(() => {
+    page.evaluate((owner) => {
       return Array.from(document.querySelectorAll(".join")).map(
         (node) => node.textContent || node.outerHTML
       );
-    }),
-    page.evaluate(() => {
+    }, process.env.owner), // Pass owner to the page context
+
+    page.evaluate((owner) => {
       return Array.from(document.querySelectorAll(".leave")).map(
         (node) => node.textContent || node.outerHTML
       );
-    }),
-    page.evaluate(() => {
+    }, process.env.owner), // Pass owner to the page context
+
+    page.evaluate((owner) => {
       const kickedSpan = Array.from(document.querySelectorAll("span")).find(
         (span) => span.textContent.includes("has kicked")
       );
       return kickedSpan ? kickedSpan.textContent : null;
-    }),
+    }, process.env.owner), // Pass owner to the page context
 
-    page.evaluate(() => {
+    page.evaluate((owner) => {
       const elements = document.querySelectorAll("div[data-message-id]");
 
       // Filter messages containing a <code> tag with a mention
       const filteredData = Array.from(elements)
         .filter((el) => {
           const mention = el.querySelector("code"); // Find the <code> element containing the mention
-          return mention && mention.innerText.includes("@Psycho"); // Check if the mention contains "@Veronica"
-        }) // Check if the <div> contains a <code> tag
+          return mention && mention.innerText.includes(`@${owner}`); // Check if the mention contains "@owner"
+        })
+        // Check if the <div> contains a <code> tag
         .map((el) => {
           const userName = el.querySelector(".name.primary span"); // Extract the user's name
           const mention = el.querySelector("code"); // Find the <code> element containing the mention
@@ -49,10 +55,12 @@ async function ActivityHook(page) {
         .filter((item) => item.user && item.mention && item.message); // Filter out messages missing user, mention, or message text
 
       return filteredData;
-    }),
-    await page.evaluate(() => {
+    }, process.env.owner), // Pass owner to the page context
+
+    page.evaluate(() => {
       return window.location.pathname.split("/")[2]; // Extract the roomId from the URL
     }),
+
     page.evaluate(() => {
       // Find all span elements
       const spans = document.querySelectorAll("span");
@@ -68,14 +76,15 @@ async function ActivityHook(page) {
       // Return the matching span's text or null if not found
       return targetSpan ? targetSpan.textContent : null;
     }),
-    page.evaluate(() => {
+
+    page.evaluate((owner) => {
       const elements = document.querySelectorAll("div[data-message-id]");
 
       // Filter messages containing a quote or mention with the name "Veronica"
       const filteredData = Array.from(elements)
         .filter((el) => {
           const quote = el.querySelector(".quote"); // Look for a quote element within the div
-          return quote && quote.innerText.includes("Psycho"); // Check if the quote contains the name "Veronica"
+          return quote && quote.innerText.includes(owner); // Check if the quote contains the name "Veronica"
         })
         .map((el) => {
           const userName = el.querySelector(".name.primary span"); // Extract the user's name
@@ -90,7 +99,7 @@ async function ActivityHook(page) {
         .filter((item) => item.user && item.message); // Filter out entries missing user or message text
 
       return filteredData;
-    }),
+    }, process.env.owner), // Pass owner to the page context
   ]);
 
   return [

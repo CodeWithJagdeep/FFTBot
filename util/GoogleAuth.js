@@ -13,35 +13,43 @@ class GoogleAuth {
    * @param {object} page - Puppeteer page instance
    * @returns {Promise<void>}
    */
-  async Login(page) {
+  async Login(page, browser) {
     if (!page || typeof page.goto !== "function") {
       throw new Error("Invalid Puppeteer page instance provided.");
     }
 
     try {
+      const pages = await browser.pages();
       // Navigate to the Google login page
       await page.goto(this.url, { waitUntil: "domcontentloaded" });
       console.log("Navigated to Google Sign-In page.");
-      await page.waitForNavigation({ waitUntil: "domcontentloaded" });
+      Delay(2000);
+      let authTab = pages.find((page) =>
+        page.url().includes("accounts.google.com")
+      );
+      await authTab.bringToFront();
+      await authTab.waitForNavigation({ waitUntil: "domcontentloaded" });
       // Enter email and proceed
-      await page.waitForSelector('input[type="email"]');
-      await page.type('input[type="email"]', this.email);
-      await page.click("#identifierNext");
+      await authTab.waitForSelector('input[type="email"]');
+      await authTab.type('input[type="email"]', this.email);
+      await authTab.click("#identifierNext");
       console.log("Email submitted.");
 
       // Wait for password input and proceed
-      await page.waitForSelector('input[type="password"]', { visible: true });
-      await page.type('input[type="password"]', this.password);
-      await page.click("#passwordNext");
+      await authTab.waitForSelector('input[type="password"]', {
+        visible: true,
+      });
+      await authTab.type('input[type="password"]', this.password);
+      await authTab.click("#passwordNext");
       console.log("Password submitted.");
 
       // Wait for navigation to confirm login success
-      await page.waitForNavigation({ waitUntil: "networkidle2" });
+      await authTab.waitForNavigation({ waitUntil: "networkidle2" });
       console.log("Login successful.");
 
       // Optional: Dynamic wait instead of static delay
-      await page.waitForSelector("body", { visible: true });
-      await Delay(0.5 * 60 * 1000);
+      await authTab.waitForSelector("body", { visible: true });
+      // await Delay(60 * 1000);
       console.log("Post-login actions completed.");
     } catch (error) {
       console.error("Error during Google login:");

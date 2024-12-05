@@ -8,13 +8,14 @@ const launchBrowser = async (isHeadless) => {
     console.log("Extension path:", extensionPath);
     const browser = await puppeteer.launch({
       headless: isHeadless,
-      executablePath:
-        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", // Ensure this is correct
       args: [
         "--disable-blink-features=AutomationControlled", // Avoid detection
         "--disable-extensions-file-access-check", // Bypass file access check
         `--disable-extensions-except=${extensionPath}`,
         `--load-extension=${extensionPath}`,
+        "--no-sandbox", // Disable sandboxing for Linux
+        "--disable-setuid-sandbox", // Avoid permission issues in Linux
+        "--disable-dev-shm-usage", // Use /tmp for shared memory to avoid space issues
       ],
     });
     console.log("Browser launched successfully!");
