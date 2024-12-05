@@ -120,20 +120,21 @@ class ChatGPTAutomation {
       await newTab.waitForSelector("textarea");
       await newTab.type(
         "textarea",
-        `${message} make super roasted way reply in hindi but use english letters only reply dont give any suggestion also use emoji to show little human feeling`
+        `${message} `
       );
+      await Delay(2000);
       await newTab.waitForSelector('[data-testid="send-button"]', {
         visible: true,
       });
       await newTab.click('[data-testid="send-button"]');
-      await Delay(2000); // Wait for the response to load
+      await Delay(3000); // Wait for the response to load
       console.log("Reply sent.");
       // Click send button
-      await newTab.waitForSelector('[data-testid="send-button"]', {
-        visible: true,
-      });
-      await newTab.click('[data-testid="send-button"]');
-      // Wait for assistant response
+      // await newTab.waitForSelector('[data-testid="send-button"]', {
+      //   visible: true,
+      // });
+      // await newTab.click('[data-testid="send-button"]');
+      // // Wait for assistant response
       console.log("Reply sent. Extracting response...");
       await newTab.waitForSelector('[data-message-author-role="assistant"]', {
         visible: true,

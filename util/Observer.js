@@ -32,7 +32,8 @@ class Observer {
     this.isIntroduce = [];
     this.currentPromotedNode = [];
     this.prevPromotedNode = [];
-
+    this.userReplies = [];
+    this.prevReply = [];
     // Flags
     this.isBusy = false;
 
@@ -69,6 +70,55 @@ class Observer {
     } catch (err) {
       // console.error("Error sending message:", err);
       console.log("got error");
+    }
+  }
+
+  async makeReply() {
+    try {
+      const newMessages = this.userReplies.filter(
+        (node) =>
+          !this.prevReply.some(
+            (state) =>
+              state.username === node.user &&
+              state.message === node.message &&
+              state.roomId === this.roomId
+          )
+      );
+      for (const node of newMessages) {
+        this.prevReply.push({
+          username: node.user,
+          message: node.message,
+          roomId: this.roomId,
+        });
+        console.log(node);
+        const sanitizedNode = node.message
+          .replace(/@Psycho/gi, "") // Replace @Veronica (case-insensitive)
+          .trim();
+        try {
+          const ans = await new ChatGPTAutomation(
+            this.page,
+            this.browser
+          ).getAnswers(
+            `${sanitizedNode} make reply like real human,  only reply dont give any suggestion also use emoji to show little human feeling use not more than 20 words, and dont use hey ${node.user}, use name in between sentence`
+          );
+          const sanitizedans = ans.replace(
+            new RegExp(`${node.user}`, "gi"),
+            `\`\`${node.user}\`\``
+          );
+          const response = ans
+            ? sanitizedans
+            : `\`\`@${node.user}\`\` mai bhul gaye hum kaha the 😂😂`;
+          await this.messageSender(response);
+        } catch (error) {
+          console.error("Error generating AI response:");
+          const fallback = this.fallbackMessage(node.user);
+          const fallbackMessage =
+            fallback[Math.floor(Math.random() * fallback.length)];
+          await this.messageSender(fallbackMessage);
+        }
+      }
+    } catch (err) {
+      console.error("Error processing AI responses:");
     }
   }
 
@@ -181,10 +231,17 @@ class Observer {
           const ans = await new ChatGPTAutomation(
             this.page,
             this.browser
-          ).getAnswers(sanitizedNode);
+          ).getAnswers(
+            `${sanitizedNode} make reply like real human,  only reply dont give any suggestion also use emoji to show little human feeling use not more than 20 words, and dont use hey ${node.user}, use name in between sentence`
+          );
+
+          const sanitizedans = ans.replace(
+            new RegExp(`${node.user}`, "gi"),
+            `\`\`@${node.user}\`\``
+          );
           const response = ans
-            ? `\`\`@${node.user}\`\` ${ans}`
-            : `\`\`@${node.user}\`\` I couldn't understand your query.`;
+            ? sanitizedans
+            : `\`\`@${node.user}\`\` mai bhul gaye hum kaha the 😂😂`;
           await this.messageSender(response);
         } catch (error) {
           console.error("Error generating AI response:");
@@ -244,13 +301,16 @@ class Observer {
           this.callingMe,
           this.roomId,
           this.currentPromotedNode,
+          this.userReplies,
         ] = await ActivityHook(this.page);
         await this.AiResponse();
-        await this.joinedUser();
-        await this.leavedUserMessage();
+        await this.makeReply();
+        // await this.joinedUser();
+        // await this.leavedUserMessage();
         await this.kickedUser();
         await this.PromotedNode();
       } catch (error) {
+        console.log(error);
         console.error("Error observing page changes:");
       } finally {
         this.isBusy = false; // Mark bot as free after processing

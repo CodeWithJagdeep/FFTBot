@@ -6,6 +6,7 @@ async function ActivityHook(page) {
     callingMe,
     roomId,
     currentPromotedNode,
+    userReplies,
   ] = await Promise.all([
     page.evaluate(() => {
       return Array.from(document.querySelectorAll(".join")).map(
@@ -67,6 +68,29 @@ async function ActivityHook(page) {
       // Return the matching span's text or null if not found
       return targetSpan ? targetSpan.textContent : null;
     }),
+    page.evaluate(() => {
+      const elements = document.querySelectorAll("div[data-message-id]");
+
+      // Filter messages containing a quote or mention with the name "Veronica"
+      const filteredData = Array.from(elements)
+        .filter((el) => {
+          const quote = el.querySelector(".quote"); // Look for a quote element within the div
+          return quote && quote.innerText.includes("Psycho"); // Check if the quote contains the name "Veronica"
+        })
+        .map((el) => {
+          const userName = el.querySelector(".name.primary span"); // Extract the user's name
+          const message = el.querySelector(".text.main-content p"); // Extract the message text from the <p> tag
+
+          // Return an object containing the user's name and message text
+          return {
+            user: userName ? userName.innerText.trim() : "",
+            message: message ? message.innerText.trim() : "",
+          };
+        })
+        .filter((item) => item.user && item.message); // Filter out entries missing user or message text
+
+      return filteredData;
+    }),
   ]);
 
   return [
@@ -76,6 +100,7 @@ async function ActivityHook(page) {
     callingMe,
     roomId,
     currentPromotedNode,
+    userReplies,
   ];
 }
 
