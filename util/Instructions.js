@@ -35,56 +35,10 @@ async function getParenElement(page, classname) {
   }
 }
 
-async function getListItems(page) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      // Interact with the page to get the list items
-      const result = await page.evaluate(() => {
-        try {
-          // Find the first element with the class 'thumbnail'
-          const thumbnailElement = document.querySelector(".thumbnail");
-
-          if (!thumbnailElement) {
-            console.log("No element with class 'thumbnail' found");
-            return { success: false, message: "Thumbnail not found" }; // Return failure
-          }
-
-          // Find the closest ancestor with class 'ant-list-item'
-          const listItem = thumbnailElement.closest("li.ant-list-item");
-
-          if (!listItem) {
-            console.log("No parent element with class 'ant-list-item' found");
-            return { success: false, message: "No parent list item found" }; // Return failure
-          }
-
-          // Click the list item
-          console.log("Clicking on the list item");
-          listItem.click();
-
-          return { success: true }; // Return success
-        } catch (err) {
-          console.error("Error in page.evaluate:", err);
-          return { success: false, message: err.message }; // Return failure with error message
-        }
-      });
-
-      if (result.success) {
-        return resolve(true); // Successfully clicked the item
-      } else {
-        console.log(result.message); // Log the message if there was a failure
-        return reject(result.message); // Reject with the error message
-      }
-    } catch (err) {
-      console.error("Error in getListItems:", err);
-      return reject("An error occurred in the getListItems function");
-    }
-  });
-}
-
 const intructions = async (page, command) => {
   try {
     console.log("Received command:", command); // Log the command received
-    let song = command.toLowerCase().split("play")[1].trim(); // Get the song or message after 'play'
+    let song = command.toLowerCase().split("get link")[1].trim(); // Get the song or message after 'play'
     console.log("Extracted song/message:", song);
 
     // Wait for and click the "Youtube" tab
@@ -122,10 +76,18 @@ const intructions = async (page, command) => {
     await page.waitForSelector("div.ant-tabs-tab");
     console.log(`Looking for div.ant-tabs-tab with text '`);
 
-    const success = await page.evaluate(() => {
-      // Find all the tabs and loop through them to find the one containing 'classname'
-      const tabs = document.querySelectorAll(".result");
-      console.log(tabs);
+    const result = await page.evaluate(() => {
+      const firstResult = document.querySelector(".result");
+
+      // If the first result exists and contains an <a> tag
+      if (firstResult) {
+        const link = firstResult.querySelector("a"); // Find the <a> tag inside the first result
+        if (link) {
+          return link.href; // Return the href of the first <a> tag
+        }
+      }
+
+      return null; // Return null if no link is found
     }); // Pass classname to the browser context
     // Wait for and click the "Chat Box" tab
     const chatBoxClicked = await getParenElement(page, "Chat Box");
@@ -134,7 +96,8 @@ const intructions = async (page, command) => {
       return false;
     }
 
-    return result; // Return the result from the list item evaluation
+    return result;
+    // Return the result from the list item evaluation
   } catch (error) {
     console.error("Error during instructions function:", error);
     return false; // Return false if any error occurs outside evaluate

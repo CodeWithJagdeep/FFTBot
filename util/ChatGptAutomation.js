@@ -127,9 +127,7 @@ class ChatGPTAutomation {
       await Delay(3000); // Wait for the response to load
       console.log("Reply sent.");
       // Click send button
-      // await newTab.waitForSelector('[data-testid="send-button"]', {
-      //   visible: true,
-      // });
+
       // await newTab.click('[data-testid="send-button"]');
       // // Wait for assistant response
       console.log("Reply sent. Extracting response...");
@@ -137,6 +135,7 @@ class ChatGPTAutomation {
         visible: true,
       });
       await Delay(6000); // Wait for the response to load
+
       // Extract response text
       const responses = await newTab.evaluate(() => {
         const elements = document.querySelectorAll(

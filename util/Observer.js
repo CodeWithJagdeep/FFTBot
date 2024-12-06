@@ -12,6 +12,7 @@ const ActivityHook = require("../Hooks/Activityhooks");
 const ChatGPTAutomation = require("./ChatGptAutomation");
 const dotenv = require("dotenv");
 const tagHook = require("../Script/tagReply");
+const intructions = require("./Instructions");
 dotenv.config({ path: "../.env" });
 
 class Observer {
@@ -40,7 +41,7 @@ class Observer {
     this.doWelcome = false;
     // Flags
     this.isBusy = false;
-
+    this.songPlaying = { isPlaying: true, timeStamp: null };
     // Message templates
     this.welcomeMessages = WelcomeMessages;
     this.funnyLeavingMessages = funnyLeavingMessages;
@@ -231,7 +232,14 @@ class Observer {
           message: node.message,
           roomId: this.roomId,
         });
-        console.log(node);
+        if (node.message.includes("get link")) {
+          let url = await intructions(this.page, node.message);
+          if (url) {
+            return await this.messageSender(url);
+          }
+          return await this.messageSender("didnt found url");
+        }
+
         const sanitizedNode = node.message
           .replace(new RegExp(`@${process.env.owner}`, "gi"), "") // Replace @Veronica (case-insensitive)
           .trim();
@@ -254,7 +262,7 @@ class Observer {
           );
 
           const sanitizedans = ans.replace(
-            new RegExp(`@${node.user}`, "gi"),
+            new RegExp(`${node.user}`, "gi"),
             `\`\`@${node.user}\`\``
           );
           const response = ans
