@@ -44,15 +44,18 @@ async function ActivityHook(page) {
           const userName = el.querySelector(".name.primary span"); // Extract the user's name
           const mention = el.querySelector("code"); // Find the <code> element containing the mention
           const message = el.querySelector(".text.main-content p"); // Extract the message text from the <p> tag
-
+          const messageId = el.getAttribute("data-message-id");
           // Return an object containing the user's name, mention, and message text
           return {
+            messageId: messageId || "", // Include the `data-message-id`
             user: userName ? userName.innerText.trim() : "",
             mention: mention ? mention.innerText.trim() : "",
             message: message ? message.innerText.trim() : "",
           };
         })
-        .filter((item) => item.user && item.mention && item.message); // Filter out messages missing user, mention, or message text
+        .filter(
+          (item) => item.messageId && item.user && item.mention && item.message
+        ); // Filter out messages missing user, mention, or message text
 
       return filteredData;
     }, process.env.owner), // Pass owner to the page context
@@ -89,14 +92,15 @@ async function ActivityHook(page) {
         .map((el) => {
           const userName = el.querySelector(".name.primary span"); // Extract the user's name
           const message = el.querySelector(".text.main-content p"); // Extract the message text from the <p> tag
-
+          const messageId = el.getAttribute("data-message-id");
           // Return an object containing the user's name and message text
           return {
+            messageId: messageId || "", // Include the `data-message-id`
             user: userName ? userName.innerText.trim() : "",
             message: message ? message.innerText.trim() : "",
           };
         })
-        .filter((item) => item.user && item.message); // Filter out entries missing user or message text
+        .filter((item) => item.messageId && item.user && item.message); // Filter out entries missing user or message text
 
       return filteredData;
     }, process.env.owner), // Pass owner to the page context

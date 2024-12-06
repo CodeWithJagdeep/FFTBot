@@ -11,6 +11,7 @@ const {
 const ActivityHook = require("../Hooks/Activityhooks");
 const ChatGPTAutomation = require("./ChatGptAutomation");
 const dotenv = require("dotenv");
+const tagHook = require("../Script/tagReply");
 dotenv.config({ path: "../.env" });
 
 class Observer {
@@ -97,12 +98,13 @@ class Observer {
         const sanitizedNode = node.message
           .replace(new RegExp(`${process.env.owner}`, "gi"), "") // Replace @Veronica (case-insensitive)
           .trim();
+
         try {
           const ans = await new ChatGPTAutomation(
             this.page,
             this.browser
           ).getAnswers(
-            `${sanitizedNode} make reply like real human,  only reply dont give any suggestion also use emoji to show little human feeling use not more than 20 words, and dont use hey ${node.user}, use  ${node.user} in between sentence`
+            `${sanitizedNode} make reply in hindi like real human, use english letter  only reply dont give any suggestion also use emoji to show little human feeling use not more than 20 words, and dont use hey ${node.user}, use  ${node.user} in between sentence`
           );
           const sanitizedans = ans.replace(
             new RegExp(`${node.user}`, "gi"),
@@ -121,7 +123,7 @@ class Observer {
         }
       }
     } catch (err) {
-      console.error("Error processing AI responses:");
+      console.error("Error processing AI responses:", err);
     }
   }
 
@@ -229,15 +231,20 @@ class Observer {
           message: node.message,
           roomId: this.roomId,
         });
-        if (node.message == "welcome users") {
-          return (this.doWelcome = true);
-        }
-        if (node.message == "dont welcome users") {
-          return (this.doWelcome = false);
-        }
+        console.log(node);
         const sanitizedNode = node.message
-          .replace(new RegExp(`${process.env.owner}`, "gi"), "") // Replace @Veronica (case-insensitive)
+          .replace(new RegExp(`@${process.env.owner}`, "gi"), "") // Replace @Veronica (case-insensitive)
           .trim();
+
+        if (sanitizedNode == "welcome users" && node.user == "Aadarsh") {
+          this.doWelcome = true;
+          return await this.messageSender("jaisa apka hukum");
+        }
+        if (sanitizedNode == "dont welcome users" && node.user == "Aadarsh") {
+          this.doWelcome = false;
+          return await this.messageSender("jaisa apka hukum");
+        }
+
         try {
           const ans = await new ChatGPTAutomation(
             this.page,
@@ -247,7 +254,7 @@ class Observer {
           );
 
           const sanitizedans = ans.replace(
-            new RegExp(`${node.user}`, "gi"),
+            new RegExp(`@${node.user}`, "gi"),
             `\`\`@${node.user}\`\``
           );
           const response = ans
