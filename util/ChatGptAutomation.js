@@ -68,7 +68,7 @@ class ChatGPTAutomation {
       Delay(1500);
       await geminiTab.keyboard.type(
         `${message} make only reply dont give any suggestion`,
-        { delay: 10 }
+        { delay: 0.2 }
       );
       // Wait for UI stabilization
       console.log("Waiting for stability...");
@@ -124,11 +124,7 @@ class ChatGPTAutomation {
         visible: true,
       });
       await newTab.click('[data-testid="send-button"]');
-      await Delay(3000); // Wait for the response to load
-      console.log("Reply sent.");
-      // Click send button
 
-      // await newTab.click('[data-testid="send-button"]');
       // // Wait for assistant response
       console.log("Reply sent. Extracting response...");
       await newTab.waitForSelector('[data-message-author-role="assistant"]', {
@@ -153,62 +149,6 @@ class ChatGPTAutomation {
       let fftTab = pages.find((page) => page.url().includes("free4talk.com")); // Get all open tabs (pages)
       await fftTab.bringToFront();
     }
-    // let browser, page;
-    // try {
-    //   // Check for predefined responses
-    //   const predefinedResponse = this.handleConditions(message);
-    //   if (predefinedResponse) {
-    //     return [predefinedResponse]; // Ensure consistent return type
-    //   }
-    //   // Launch browser
-    //   browser = await this.launchBrowser();
-    //   page = await browser.newPage();
-    //   // Set user agent and navigate to ChatGPT URL
-    //   await page.setUserAgent(this.userAgent);
-    //   await page.goto(this.url, { waitUntil: "domcontentloaded" });
-    //   await Delay(2000);
-    //   console.log(`Processing message: ${message}`);
-    //   //   this.ChatGptAuth();
-    //   //   Type message into the text area
-    //   await page.waitForSelector("textarea");
-    //   await page.type(
-    //     "textarea",
-    //     `${message} make only reply dont give any suggestion`
-    //   );
-    //   await page.waitForSelector('[data-testid="send-button"]', {
-    //     visible: true,
-    //   });
-    //   await page.click('[data-testid="send-button"]');
-    //   await Delay(2000); // Wait for the response to load
-    //   console.log("Reply sent.");
-    //   // Click send button
-    //   await page.waitForSelector('[data-testid="send-button"]', {
-    //     visible: true,
-    //   });
-    //   await page.click('[data-testid="send-button"]');
-    //   // Wait for assistant response
-    //   console.log("Reply sent. Extracting response...");
-    //   await page.waitForSelector('[data-message-author-role="assistant"]', {
-    //     visible: true,
-    //   });
-    //   await Delay(8000); // Wait for the response to load
-    //   // Extract response text
-    //   const responses = await page.evaluate(() => {
-    //     const elements = document.querySelectorAll(
-    //       '[data-message-author-role="assistant"]'
-    //     );
-    //     return Array.from(elements).map((el) => el.innerText.trim());
-    //   });
-    //   console.log("Responses retrieved:", responses);
-    //   return responses;
-    // } catch (error) {
-    //   console.error("Error while processing message whill retreving answer");
-    //   throw new Error("Failed to retrieve responses.");
-    // } finally {
-    //   // Ensure proper cleanup
-    //   if (page) await page.close().catch(console.error);
-    //   if (browser) await browser.close().catch(console.error);
-    // }
   }
 
   /**

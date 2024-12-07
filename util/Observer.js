@@ -48,6 +48,10 @@ class Observer {
     this.roastedKickMessages = roastedKickMessages;
     this.fallbackMessage = fallbackMessage;
     this.TimeSpend = SpendingTime;
+    this.getMessages = [];
+    this.allPrevMessage = [];
+    this.waitTime = 0;
+    this.MesCombo = "";
   }
 
   async selfIntroduce() {
@@ -97,7 +101,7 @@ class Observer {
         });
         console.log(node);
         const sanitizedNode = node.message
-          .replace(new RegExp(`${process.env.owner}`, "gi"), "") // Replace @Veronica (case-insensitive)
+          .replace(new RegExp(`@${process.env.owner}`, "gi"), "") // Replace @Veronica (case-insensitive)
           .trim();
 
         try {
@@ -105,11 +109,11 @@ class Observer {
             this.page,
             this.browser
           ).getAnswers(
-            `${sanitizedNode} make reply in hindi like real human, use english letter  only reply dont give any suggestion also use emoji to show little human feeling use not more than 20 words, and dont use hey ${node.user}, use  ${node.user} in between sentence`
+            `${sanitizedNode}, reply in Hindi with English letters, no flirting, use emojis, keep under 15 words.remember u r a girl and dont use hey ${node.user},this message is by ${node.user} so use ${node.user} in between sentence`
           );
           const sanitizedans = ans.replace(
             new RegExp(`${node.user}`, "gi"),
-            `\`\`${node.user}\`\``
+            `\`\`@${node.user}\`\``
           );
           const response = ans
             ? sanitizedans
@@ -258,7 +262,7 @@ class Observer {
             this.page,
             this.browser
           ).getAnswers(
-            `${sanitizedNode} make reply like real human,  only reply dont give any suggestion also use emoji to show little human feeling use not more than 20 words, and dont use hey ${node.user}, use  ${node.user} in between sentence`
+            `${sanitizedNode}, reply in Hindi with English letters, no flirting, use emojis, keep under 15 words.remember u r a girl and dont use hey ${node.user},this message is by ${node.user} so use ${node.user} in between sentence`
           );
 
           const sanitizedans = ans.replace(
@@ -314,6 +318,57 @@ class Observer {
       }
     }
   }
+  async getAllRecentMessage() {
+    const newMessages = this.getMessages.filter(
+      (node) =>
+        !this.allPrevMessage.some(
+          (state) =>
+            state.username === node.user &&
+            state.message === node.message &&
+            state.roomId === this.roomId
+        )
+    );
+    for (const node of newMessages) {
+      if (
+        node.user !== process.env.owner &&
+        node.user !== "Coffee Notification" &&
+        node.user != "Banning Notification"
+      ) {
+        this.allPrevMessage.push({
+          username: node.user,
+          message: node.message,
+          roomId: this.roomId,
+        });
+
+        const sanitizedNode = node.message
+          .replace(new RegExp(`@${process.env.owner}`, "gi"), "") // Replace @Veronica (case-insensitive)
+          .trim();
+
+        try {
+          const ans = await new ChatGPTAutomation(
+            this.page,
+            this.browser
+          ).getAnswers(
+            `${sanitizedNode}, reply in Hindi with English letters, no flirting, use emojis, keep under things short.remember u r a girl and dont use hey ${node.user},this message is by ${node.user} so use ${node.user} in between sentence`
+          );
+          const sanitizedans = ans.replace(
+            new RegExp(`${node.user}`, "gi"),
+            `\`\`@${node.user}\`\``
+          );
+          const response = ans
+            ? sanitizedans
+            : `\`\`@${node.user}\`\` mai bhul gaye hum kaha the 😂😂`;
+          await this.messageSender(response);
+        } catch (error) {
+          console.error("Error generating AI response:");
+          const fallback = this.fallbackMessage(node.user);
+          const fallbackMessage =
+            fallback[Math.floor(Math.random() * fallback.length)];
+          await this.messageSender(fallbackMessage);
+        }
+      }
+    }
+  }
 
   async ObservePageChange() {
     setInterval(async () => {
@@ -328,12 +383,15 @@ class Observer {
           this.roomId,
           this.currentPromotedNode,
           this.userReplies,
+          this.getMessages,
         ] = await ActivityHook(this.page);
+        // await this.getAllRecentMessage();
         await this.AiResponse();
         await this.makeReply();
         await this.joinedUser();
         // await this.leavedUserMessage();
         await this.kickedUser();
+
         // await this.PromotedNode();
       } catch (error) {
         console.log(error);

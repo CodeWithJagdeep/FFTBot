@@ -10,7 +10,7 @@ async function ActivityHook(page) {
     roomId,
     currentPromotedNode,
     userReplies,
-    songLinks,
+    getMessages,
   ] = await Promise.all([
     page.evaluate((owner) => {
       return Array.from(document.querySelectorAll(".join")).map(
@@ -105,30 +105,51 @@ async function ActivityHook(page) {
 
       return filteredData;
     }, process.env.owner), // Pass owner to the page context
-    page.evaluate((owner) => {
-      const elements = document.querySelectorAll("div[data-message-id]");
+    // page.evaluate((owner) => {
+    //   const elements = document.querySelectorAll("div[data-message-id]");
 
-      // Filter messages containing a quote or mention with the name "Veronica"
+    //   // Filter messages containing a quote or mention with the name "Veronica"
+    //   const filteredData = Array.from(elements)
+    //     .filter((el) => {
+    //       const quote = el.querySelector(".quote"); // Look for a quote element within the div
+    //       return quote && quote.innerText.includes(owner); // Check if the quote contains the name "Veronica"
+    //     })
+    //     .map((el) => {
+    //       const userName = el.querySelector(".name.primary span"); // Extract the user's name
+    //       const message = el.querySelector(".text.main-content p a"); // Extract the message text from the <p> tag
+    //       const messageId = el.getAttribute("data-message-id");
+    //       // Return an object containing the user's name and message text
+    //       return {
+    //         messageId: messageId || "", // Include the `data-message-id`
+    //         user: userName ? userName.innerText.trim() : "",
+    //         message: message ? message.innerText.trim() : "",
+    //       };
+    //     })
+    //     .filter((item) => item.messageId && item.user && item.message); // Filter out entries missing user or message text
+
+    //   return filteredData;
+    // }, process.env.owner), // Pass owner to the page context
+    page.evaluate(() => {
+      const elements = document.querySelectorAll("div[data-message-id]");
+      console.log(elements);
+      // Filter messages containing a <code> tag with a mention
       const filteredData = Array.from(elements)
-        .filter((el) => {
-          const quote = el.querySelector(".quote"); // Look for a quote element within the div
-          return quote && quote.innerText.includes(owner); // Check if the quote contains the name "Veronica"
-        })
         .map((el) => {
           const userName = el.querySelector(".name.primary span"); // Extract the user's name
-          const message = el.querySelector(".text.main-content p a"); // Extract the message text from the <p> tag
+          const message = el.querySelector(".text.main-content p"); // Extract the message text from the <p> tag
           const messageId = el.getAttribute("data-message-id");
-          // Return an object containing the user's name and message text
+          console.log(userName, message, messageId);
+          // Return an object containing the user's name, mention, and message text
           return {
             messageId: messageId || "", // Include the `data-message-id`
             user: userName ? userName.innerText.trim() : "",
             message: message ? message.innerText.trim() : "",
           };
         })
-        .filter((item) => item.messageId && item.user && item.message); // Filter out entries missing user or message text
+        .filter((item) => item.messageId && item.user && item.message); // Filter out messages missing user, mention, or message text
 
       return filteredData;
-    }, process.env.owner), // Pass owner to the page context
+    }), // Pass owner to the page context
   ]);
 
   return [
@@ -139,6 +160,7 @@ async function ActivityHook(page) {
     roomId,
     currentPromotedNode,
     userReplies,
+    getMessages,
   ];
 }
 
