@@ -13,6 +13,7 @@ const ChatGPTAutomation = require("./ChatGptAutomation");
 const dotenv = require("dotenv");
 const tagHook = require("../Script/tagReply");
 const intructions = require("./Instructions");
+const Delay = require("../Hooks/Delay");
 dotenv.config({ path: "../.env" });
 
 class Observer {
@@ -54,6 +55,52 @@ class Observer {
     this.MesCombo = "";
   }
 
+  async ActiveReplyTab(messageId) {
+    return await this.page.evaluate(async (messageId) => {
+      // Make actions visible
+      try {
+        let invisibleDiv = document.querySelectorAll(
+          ".flrtHK.message .actions"
+        );
+        invisibleDiv.forEach((action) => {
+          action.style.visibility = "visible";
+          action.style.lineHeight = "normal";
+        });
+
+        // Wait for the DOM update
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        // Find the message box by data-message-id
+        const msgbox = document.querySelectorAll(
+          `div[data-message-id="${messageId}"]`
+        );
+
+        if (msgbox.length > 0) {
+          // Proceed to find the button inside the msgbox
+          const replyb = Array.from(
+            msgbox[0].querySelectorAll(".ant-btn-background-ghost")
+          ).find((btn) => {
+            const span = btn.querySelector("span");
+            return span && span.innerText.trim() === "Reply";
+          });
+
+          if (replyb) {
+            console.log(replyb);
+            replyb.click();
+
+            return true; // Return true indicating success
+          } else {
+            return false; // Return false if the button isn't found
+          }
+        } else {
+          return false; // Return false if the message box is not found
+        }
+      } catch (err) {
+        console.log(err);
+      }
+    }, messageId);
+  }
+
   async selfIntroduce() {
     await this.page.waitForSelector("textarea");
     const newMessages = this.isIntroduce.filter(
@@ -82,6 +129,40 @@ class Observer {
     }
   }
 
+  async processResponse(node) {
+    const sanitizedNode = node.message
+      .replace(new RegExp(`@${process.env.owner}`, "gi"), "") // Replace @Veronica (case-insensitive)
+      .trim();
+
+    try {
+      const ans = await new ChatGPTAutomation(
+        this.page,
+        this.browser
+      ).getAnswers(
+        `${sanitizedNode},reply like real human, use emojis, keep chat under 10-15 words. dont add any name reply as male proceptive`
+      );
+      const sanitizedans = ans.replace(
+        new RegExp(`${node.user}`, "gi"),
+        `\`\`@${node.user}\`\``
+      );
+      const response = ans
+        ? sanitizedans
+        : `\`\`@${node.user}\`\` mai bhul gaye hum kaha the 😂😂`;
+      this.prevReply.push({
+        username: process.env.owner,
+        message: ans,
+        roomId: this.roomId,
+      });
+      await this.messageSender(response);
+    } catch (error) {
+      console.error("Error generating AI response:");
+      const fallback = this.fallbackMessage(node.user);
+      const fallbackMessage =
+        fallback[Math.floor(Math.random() * fallback.length)];
+      await this.messageSender(fallbackMessage);
+    }
+  }
+
   async makeReply() {
     try {
       const newMessages = this.userReplies.filter(
@@ -93,6 +174,7 @@ class Observer {
               state.roomId === this.roomId
           )
       );
+      console.log(newMessages);
       for (const node of newMessages) {
         this.prevReply.push({
           username: node.user,
@@ -100,31 +182,9 @@ class Observer {
           roomId: this.roomId,
         });
         console.log(node);
-        const sanitizedNode = node.message
-          .replace(new RegExp(`@${process.env.owner}`, "gi"), "") // Replace @Veronica (case-insensitive)
-          .trim();
-
-        try {
-          const ans = await new ChatGPTAutomation(
-            this.page,
-            this.browser
-          ).getAnswers(
-            `${sanitizedNode}, reply in Hindi with English letters, no flirting, use emojis, keep under 15 words.remember u r a girl and dont use hey ${node.user},this message is by ${node.user} so use ${node.user} in between sentence`
-          );
-          const sanitizedans = ans.replace(
-            new RegExp(`${node.user}`, "gi"),
-            `\`\`@${node.user}\`\``
-          );
-          const response = ans
-            ? sanitizedans
-            : `\`\`@${node.user}\`\` mai bhul gaye hum kaha the 😂😂`;
-          await this.messageSender(response);
-        } catch (error) {
-          console.error("Error generating AI response:");
-          const fallback = this.fallbackMessage(node.user);
-          const fallbackMessage =
-            fallback[Math.floor(Math.random() * fallback.length)];
-          await this.messageSender(fallbackMessage);
+        if (node.user !== "Roshni") {
+          await this.ActiveReplyTab(node.messageId);
+          return await this.processResponse(node);
         }
       }
     } catch (err) {
@@ -230,18 +290,26 @@ class Observer {
               state.roomId === this.roomId
           )
       );
+
       for (const node of newMessages) {
         this.previousQuestionNodes.push({
           username: node.user,
           message: node.message,
           roomId: this.roomId,
         });
+        console.log("on tag", node);
         if (node.message.includes("get link")) {
           let url = await intructions(this.page, node.message);
           if (url) {
             return await this.messageSender(url);
           }
           return await this.messageSender("didnt found url");
+        }
+        if (
+          node.message.includes("get unknown messages") &&
+          node.user == "Aadarsh"
+        ) {
+          return await this.showUnverifiedMessage();
         }
 
         const sanitizedNode = node.message
@@ -257,32 +325,10 @@ class Observer {
           return await this.messageSender("jaisa apka hukum");
         }
 
-        try {
-          const ans = await new ChatGPTAutomation(
-            this.page,
-            this.browser
-          ).getAnswers(
-            `${sanitizedNode}, reply in Hindi with English letters, no flirting, use emojis, keep under 15 words.remember u r a girl and dont use hey ${node.user},this message is by ${node.user} so use ${node.user} in between sentence`
-          );
-
-          const sanitizedans = ans.replace(
-            new RegExp(`${node.user}`, "gi"),
-            `\`\`@${node.user}\`\``
-          );
-          const response = ans
-            ? sanitizedans
-            : `\`\`@${node.user}\`\` mai bhul gaye hum kaha the 😂😂`;
-          await this.messageSender(response);
-        } catch (error) {
-          console.error("Error generating AI response:");
-          const fallback = this.fallbackMessage(node.user);
-          const fallbackMessage =
-            fallback[Math.floor(Math.random() * fallback.length)];
-          await this.messageSender(fallbackMessage);
-        }
+        return await this.processResponse(node);
       }
     } catch (err) {
-      console.error("Error processing AI responses:");
+      console.error("Error processing AI responses:", err);
     }
   }
 
@@ -318,7 +364,15 @@ class Observer {
       }
     }
   }
+
+  async showUnverifiedMessage() {
+    for (let node of this.allPrevMessage) {
+      const response = `\`\`@${node.user}\`\` sends ${node.message}`;
+      await this.messageSender(response);
+    }
+  }
   async getAllRecentMessage() {
+    // Filter out new messages that are not already processed
     const newMessages = this.getMessages.filter(
       (node) =>
         !this.allPrevMessage.some(
@@ -328,69 +382,40 @@ class Observer {
             state.roomId === this.roomId
         )
     );
+
+    // Process all new messages
     for (const node of newMessages) {
-      if (
-        node.user !== process.env.owner &&
-        node.user !== "Coffee Notification" &&
-        node.user != "Banning Notification"
-      ) {
-        this.allPrevMessage.push({
-          username: node.user,
-          message: node.message,
-          roomId: this.roomId,
-        });
-
-        const sanitizedNode = node.message
-          .replace(new RegExp(`@${process.env.owner}`, "gi"), "") // Replace @Veronica (case-insensitive)
-          .trim();
-
-        try {
-          const ans = await new ChatGPTAutomation(
-            this.page,
-            this.browser
-          ).getAnswers(
-            `${sanitizedNode}, reply in Hindi with English letters, no flirting, use emojis, keep under things short.remember u r a girl and dont use hey ${node.user},this message is by ${node.user} so use ${node.user} in between sentence`
-          );
-          const sanitizedans = ans.replace(
-            new RegExp(`${node.user}`, "gi"),
-            `\`\`@${node.user}\`\``
-          );
-          const response = ans
-            ? sanitizedans
-            : `\`\`@${node.user}\`\` mai bhul gaye hum kaha the 😂😂`;
-          await this.messageSender(response);
-        } catch (error) {
-          console.error("Error generating AI response:");
-          const fallback = this.fallbackMessage(node.user);
-          const fallbackMessage =
-            fallback[Math.floor(Math.random() * fallback.length)];
-          await this.messageSender(fallbackMessage);
-        }
-      }
+      this.allPrevMessage.push({
+        username: node.user,
+        message: node.message,
+        roomId: this.roomId,
+        read: false,
+      });
     }
   }
 
   async ObservePageChange() {
     setInterval(async () => {
       if (this.isBusy) return; // Skip iteration if bot is busy
+      [
+        this.currentJoinNodes,
+        this.currentLeaveNodes,
+        this.kickedNode,
+        this.callingMe,
+        this.roomId,
+        this.currentPromotedNode,
+        this.userReplies,
+        this.getMessages,
+      ] = await ActivityHook(this.page);
+
       this.isBusy = true;
       try {
-        [
-          this.currentJoinNodes,
-          this.currentLeaveNodes,
-          this.kickedNode,
-          this.callingMe,
-          this.roomId,
-          this.currentPromotedNode,
-          this.userReplies,
-          this.getMessages,
-        ] = await ActivityHook(this.page);
         // await this.getAllRecentMessage();
-        await this.AiResponse();
         await this.makeReply();
+        await this.AiResponse();
         await this.joinedUser();
         // await this.leavedUserMessage();
-        await this.kickedUser();
+        // await this.kickedUser();
 
         // await this.PromotedNode();
       } catch (error) {

@@ -37,8 +37,12 @@ async function ActivityHook(page) {
       // Filter messages containing a <code> tag with a mention
       const filteredData = Array.from(elements)
         .filter((el) => {
+          const userName = el.querySelector(".name.primary span");
+          const user = userName ? userName.innerText.trim() : ""; // Extract the user's name
           const mention = el.querySelector("code"); // Find the <code> element containing the mention
-          return mention && mention.innerText.includes(`@${owner}`); // Check if the mention contains "@owner"
+          return (
+            mention && mention.innerText.includes(`@${owner}`) && user !== owner
+          ); // Check if the mention contains "@owner"
         })
         // Check if the <div> contains a <code> tag
         .map((el) => {
@@ -83,12 +87,14 @@ async function ActivityHook(page) {
 
     page.evaluate((owner) => {
       const elements = document.querySelectorAll("div[data-message-id]");
-
-      // Filter messages containing a quote or mention with the name "Veronica"
       const filteredData = Array.from(elements)
         .filter((el) => {
-          const quote = el.querySelector(".quote"); // Look for a quote element within the div
-          return quote && quote.innerText.includes(owner); // Check if the quote contains the name "Veronica"
+          // Find all quote elements within the current div
+          const quotes = el.querySelectorAll(".quote");
+          // Check if any of the quote elements contain the name "Veronica" (or the owner variable)
+          return Array.from(quotes).some((quote) =>
+            quote.innerText.includes(owner)
+          );
         })
         .map((el) => {
           const userName = el.querySelector(".name.primary span"); // Extract the user's name
@@ -105,45 +111,21 @@ async function ActivityHook(page) {
 
       return filteredData;
     }, process.env.owner), // Pass owner to the page context
-    // page.evaluate((owner) => {
-    //   const elements = document.querySelectorAll("div[data-message-id]");
 
-    //   // Filter messages containing a quote or mention with the name "Veronica"
-    //   const filteredData = Array.from(elements)
-    //     .filter((el) => {
-    //       const quote = el.querySelector(".quote"); // Look for a quote element within the div
-    //       return quote && quote.innerText.includes(owner); // Check if the quote contains the name "Veronica"
-    //     })
-    //     .map((el) => {
-    //       const userName = el.querySelector(".name.primary span"); // Extract the user's name
-    //       const message = el.querySelector(".text.main-content p a"); // Extract the message text from the <p> tag
-    //       const messageId = el.getAttribute("data-message-id");
-    //       // Return an object containing the user's name and message text
-    //       return {
-    //         messageId: messageId || "", // Include the `data-message-id`
-    //         user: userName ? userName.innerText.trim() : "",
-    //         message: message ? message.innerText.trim() : "",
-    //       };
-    //     })
-    //     .filter((item) => item.messageId && item.user && item.message); // Filter out entries missing user or message text
-
-    //   return filteredData;
-    // }, process.env.owner), // Pass owner to the page context
     page.evaluate(() => {
       const elements = document.querySelectorAll("div[data-message-id]");
-      console.log(elements);
       // Filter messages containing a <code> tag with a mention
       const filteredData = Array.from(elements)
         .map((el) => {
           const userName = el.querySelector(".name.primary span"); // Extract the user's name
-          const message = el.querySelector(".text.main-content p"); // Extract the message text from the <p> tag
+          const message = el.querySelector(".text.main-content .unverified"); // Extract the message text from the <p> tag
           const messageId = el.getAttribute("data-message-id");
           console.log(userName, message, messageId);
           // Return an object containing the user's name, mention, and message text
           return {
             messageId: messageId || "", // Include the `data-message-id`
             user: userName ? userName.innerText.trim() : "",
-            message: message ? message.innerText.trim() : "",
+            message: message ? message.href : "",
           };
         })
         .filter((item) => item.messageId && item.user && item.message); // Filter out messages missing user, mention, or message text

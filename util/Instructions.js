@@ -105,3 +105,4 @@ const intructions = async (page, command) => {
 };
 
 module.exports = intructions;
+
