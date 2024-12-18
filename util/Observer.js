@@ -55,8 +55,8 @@ class Observer {
     this.MesCombo = "";
   }
 
-  async ActiveReplyTab(messageId) {
-    return await this.page.evaluate(async (messageId) => {
+  async ActiveReplyTab(node) {
+    return await this.page.evaluate(async (node) => {
       // Make actions visible
       try {
         let invisibleDiv = document.querySelectorAll(
@@ -72,7 +72,7 @@ class Observer {
 
         // Find the message box by data-message-id
         const msgbox = document.querySelectorAll(
-          `div[data-message-id="${messageId}"]`
+          `div[data-message-id="${node.messageId}"]`
         );
 
         if (msgbox.length > 0) {
@@ -81,7 +81,10 @@ class Observer {
             msgbox[0].querySelectorAll(".ant-btn-background-ghost")
           ).find((btn) => {
             const span = btn.querySelector("span");
-            return span && span.innerText.trim() === "Reply";
+            return (
+              span &&
+              span.innerText.trim() === `${node.pmMode ? "PM" : "Reply"}`
+            );
           });
 
           if (replyb) {
@@ -98,7 +101,7 @@ class Observer {
       } catch (err) {
         console.log(err);
       }
-    }, messageId);
+    }, node);
   }
 
   async selfIntroduce() {
@@ -129,17 +132,34 @@ class Observer {
     }
   }
 
+  async closeQuote() {
+    return await this.page.evaluate(async () => {
+      // Make actions visible
+      try {
+        let pmcontainer = document.querySelector(".extra");
+        if (pmcontainer) {
+          let pmclose = pmcontainer.querySelector("button");
+          pmclose.click();
+        }
+      } catch (err) {
+        console.log(err);
+      }
+    });
+  }
+
   async processResponse(node) {
     const sanitizedNode = node.message
       .replace(new RegExp(`@${process.env.owner}`, "gi"), "") // Replace @Veronica (case-insensitive)
       .trim();
 
     try {
+      const logMessage = `${node.user}: ${node.message}`;
+      this.Logger.logToFile(logMessage);
       const ans = await new ChatGPTAutomation(
         this.page,
         this.browser
       ).getAnswers(
-        `${sanitizedNode},reply like real human, use emojis, keep chat under 10-15 words. dont add any name reply as male proceptive`
+        `${sanitizedNode},reply like real human,roasting behaviour use emojis, keep chat under 10-15 words, male proceptive`
       );
       const sanitizedans = ans.replace(
         new RegExp(`${node.user}`, "gi"),
@@ -154,6 +174,7 @@ class Observer {
         roomId: this.roomId,
       });
       await this.messageSender(response);
+      await this.closeQuote();
     } catch (error) {
       console.error("Error generating AI response:");
       const fallback = this.fallbackMessage(node.user);
@@ -181,9 +202,9 @@ class Observer {
           message: node.message,
           roomId: this.roomId,
         });
-        console.log(node);
+        // console.log(node);
         if (node.user !== "Roshni") {
-          await this.ActiveReplyTab(node.messageId);
+          await this.ActiveReplyTab(node);
           return await this.processResponse(node);
         }
       }
@@ -325,6 +346,11 @@ class Observer {
           return await this.messageSender("jaisa apka hukum");
         }
 
+        if (node.pmMode) {
+          await this.ActiveReplyTab(node);
+          return await this.processResponse(node);
+        }
+
         return await this.processResponse(node);
       }
     } catch (err) {
@@ -415,7 +441,7 @@ class Observer {
         await this.AiResponse();
         await this.joinedUser();
         // await this.leavedUserMessage();
-        // await this.kickedUser();
+        await this.kickedUser();
 
         // await this.PromotedNode();
       } catch (error) {
