@@ -318,7 +318,7 @@ class Observer {
           message: node.message,
           roomId: this.roomId,
         });
-        console.log("on tag", node);
+
         if (node.message.includes("get link")) {
           let url = await intructions(this.page, node.message);
           if (url) {

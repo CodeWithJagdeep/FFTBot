@@ -20,21 +20,20 @@ function processMessageDiv(div) {
   const htmlContent = div.innerHTML; // Get the raw HTML content inside the div
 
   // Keywords to check
-  const keywords = ["html"];
+  const keywords = ["join"];
 
   // Check if the inner text contains any of the keywords
   const containsKeyword = keywords.some((keyword) =>
     innerText.includes(keyword)
   );
 
-  console.log(containsKeyword);
-  // if (containsKeyword) {
-  //   // Extract name (if the format matches "Name joined. [Time]")
-  //   const name = div.innerText.split("joined.")[0].slice(11).trim();
-  //   if (name) {
-  //     return typeInTextarea(name); // Call function to type the name in a textarea
-  //   }
-  // }
+  if (containsKeyword) {
+    // Extract name (if the format matches "Name joined. [Time]")
+    const name = div.innerText.split("joined.")[0].slice(11).trim();
+    if (name) {
+      return typeInTextarea(name); // Call function to type the name in a textarea
+    }
+  }
 }
 
 // Function to type the name in a textarea
