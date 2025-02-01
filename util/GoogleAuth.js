@@ -49,7 +49,7 @@ class GoogleAuth {
 
       // Optional: Dynamic wait instead of static delay
       await authTab.waitForSelector("body", { visible: true });
-      await Delay(60 * 1000);
+      Delay(30*1000);
       console.log("Post-login actions completed.");
     } catch (error) {
       console.error("Error during Google login:");

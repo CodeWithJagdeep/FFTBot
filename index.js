@@ -120,6 +120,7 @@ class ChatAutomation {
 
       // Navigate to the specified link
       await this.page.goto(link, { waitUntil: "domcontentloaded" });
+      await Delay(60 * 1000);
       let fftTab = pages.find((page) => page.url().includes(link));
       await fftTab.bringToFront();
 
@@ -136,9 +137,10 @@ class ChatAutomation {
   async run() {
     try {
       await this.initializeBrowser(false);
+      
+      await this.navigate(this.roomLink);
       await this.login();
       await this.chatGptChanges();
-      await this.navigate(this.roomLink);
       await this.observe();
     } catch (error) {
       console.log(error);

@@ -148,23 +148,32 @@ class Observer {
   }
 
   async processResponse(node) {
-    const sanitizedNode = node.message
+    let sanitizedNode = node.message
       .replace(new RegExp(`@${process.env.owner}`, "gi"), "") // Replace @Veronica (case-insensitive)
       .trim();
+      
+     sanitizedNode = sanitizedNode
+      .replace(new RegExp("@", "gi"), "") // Replace @Veronica (case-insensitive)
+      .trim();
+      
+      let prevConvo = node.prevConvo ? node.prevConvo.replace(new RegExp("@", "gi"), "")
+      .trim() : ""
 
     try {
       const logMessage = `${node.user}: ${node.message}`;
       this.Logger.logToFile(logMessage);
-      const ans = await new ChatGPTAutomation(
+      let ans = await new ChatGPTAutomation(
         this.page,
         this.browser
       ).getAnswers(
-        `${sanitizedNode},reply like real human,roasting behaviour use emojis, keep chat under 10-15 words, male proceptive`
+        `"${sanitizedNode}" - Make reply in very friendly way, female procepective and natural like a human use female procepective, occasionally making minor grammatical or spelling mistakes. Keep responses short, between 10-20 words. Avoid sounding overly formal or robotic and avid use kiss emoji. and add username ${node.user} in convo add slight personality and casual tone. remember you are veronica , dont include veronica in convo make reply according to this prev convo ${prevConvo}`
       );
-      const sanitizedans = ans.replace(
+       let sanitizedans = ans.replace(
         new RegExp(`${node.user}`, "gi"),
         `\`\`@${node.user}\`\``
       );
+      
+  
       const response = ans
         ? sanitizedans
         : `\`\`@${node.user}\`\` mai bhul gaye hum kaha the 😂😂`;
@@ -176,7 +185,7 @@ class Observer {
       await this.messageSender(response);
       await this.closeQuote();
     } catch (error) {
-      console.error("Error generating AI response:");
+      console.error("Error generating AI response:", error);
       const fallback = this.fallbackMessage(node.user);
       const fallbackMessage =
         fallback[Math.floor(Math.random() * fallback.length)];
@@ -203,7 +212,7 @@ class Observer {
           roomId: this.roomId,
         });
         // console.log(node);
-        if (node.user !== "Roshni") {
+        if (node.user.trim() !== "Veronica") {
           await this.ActiveReplyTab(node);
           return await this.processResponse(node);
         }
@@ -248,6 +257,7 @@ class Observer {
         (node) => !this.previousLeaveNodes.has(node)
       );
       for (const node of newLeaveNodes) {
+      
         const username = node.split("left.")[0].slice(11).trim();
         if (
           !this.previousLeaveNodes.has(username) &&

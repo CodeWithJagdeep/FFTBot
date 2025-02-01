@@ -103,12 +103,14 @@ async function ActivityHook(page) {
           const message = el.querySelector(".text.main-content p"); // Extract the message text from the <p> tag
           const messageId = el.getAttribute("data-message-id");
           const pmMode = el.className.includes("pm-mode");
+          const quotes = el.querySelector(".quote");
           // Return an object containing the user's name and message text
           return {
             messageId: messageId || "", // Include the `data-message-id`
             user: userName ? userName.innerText.trim() : "",
             message: message ? message.innerText.trim() : "",
             pmMode: pmMode,
+            prevConvo : quotes.textContent || "",
           };
         })
         .filter((item) => item.messageId && item.user && item.message); // Filter out entries missing user or message text
