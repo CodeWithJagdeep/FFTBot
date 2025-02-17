@@ -58,4 +58,4 @@ This project is licensed under the MIT License.
 
 ### Author
 Developed by **Jagdeep Singh** 🚀  
-GitHub: [WorkwithJagdeep](https://github.com/WorkwithJagdeep)
+GitHub: [WorkwithJagdeep](https://github.com/codewithJagdeep)
